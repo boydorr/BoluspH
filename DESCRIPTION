@@ -1,0 +1,23 @@
+Package: BoluspH
+Version: 0.1-1
+Date: 2018-08-06
+Title: Import and Analysis of Data from Ruminal pH Boluses
+Authors@R: c(person("Matthew", "Denwood", role=c("aut","cre"), email="md@sund.ku.dk"), 
+			person("Dan", "Jensen", role=c("ctb")),
+			person("Joachim", "Kleen", role=c("ctb")),
+			person("Nick", "Jonsson", role=c("ctb")))
+Maintainer: Matthew Denwood <md@sund.ku.dk>
+Depends:
+    R (>= 2.14.0),
+	tidyverse
+Imports:
+	readxl,
+	rlang
+Suggests:
+    knitr
+VignetteBuilder: knitr
+Description: Imports data from Excel files produced by ruminal pH bolus monitors
+	such as those produced by SmaXtec and WellCow.  To get started, see the 'BoluspH'
+	vignette: vignette('BoluspH', package='BoluspH') and/or the help file for the
+    BoluspH class (see ?BoluspH ).
+License: GPL (>= 3)

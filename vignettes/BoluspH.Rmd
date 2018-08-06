@@ -1,0 +1,28 @@
+<!--
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{A guide for importing and analysing ruminal pH bolus data}
+-->
+
+```{r, echo = FALSE, include=FALSE}
+set.seed(2018-08-06)
+```
+
+---
+
+<center> <h1>A guide for importing and analysing ruminal pH bolus data</h1> </center> 
+
+---
+
+<center> <h2>Introduction</h2> </center> 
+
+---
+
+TODO
+
+---
+
+### This vignette was built with:
+
+```{r}
+sessionInfo()
+```

@@ -1,0 +1,148 @@
+x <- function(a = (b | (c&g) | f), d, e=list(l, m)){}
+!all(sapply(formals(x), class) %in% c('(', 'name', 'call')))
+!all(sapply(formals(x), class) %in% c('(', 'name', 'call'))
+all(sapply(formals(x), class) %in% c('(', 'name', 'call'))
+all(vapply(formals(x), class, character(1)) %in% c('(', 'name', 'call'))
+vapply(formals(x), class, character(1)) %in% c('(', 'name', 'call')
+sapply(formals(f), as.character)
+sapply(formals(x), as.character)
+vapply(formals(x), function(y) return(as.character(y)[1]), character(1))
+types <- numeric(length(formals(x)))
+types
+a=1
+class(formals(x)[a])=='(' && as.character(formals(x))[1]=='('
+for(a in 1:length(formals(x))){#
+			if(class(formals(x)[a])=='(' && as.character(formals(x))[1]=='('){#
+			}else if(class(formals(x)[a])=='name' && as.character(formals(x))[1]==''){#
+#
+			}else if(class(formals(x)[a])=='call' && as.character(formals(x))[1]=='list'){#
+			}else{#
+				stop(paste0('There was an error processing argument ', a, ' for the ', names(funs)[i], ' function'))#
+			}#
+		}
+funs <- list(funny=x)
+i=1
+for(a in 1:length(formals(x))){#
+			if(class(formals(x)[a])=='(' && as.character(formals(x))[1]=='('){#
+			}else if(class(formals(x)[a])=='name' && as.character(formals(x))[1]==''){#
+#
+			}else if(class(formals(x)[a])=='call' && as.character(formals(x))[1]=='list'){#
+			}else{#
+				stop(paste0('There was an error processing argument ', a, ' for the ', names(funs)[i], ' function'))#
+			}#
+		}
+x
+class(formals(x)[a])=='(' && as.character(formals(x))[1]=='('
+class(formals(x)[a])=='('
+formals(x)
+class(formals(x)[a])
+a
+formals(x)
+formals(x)[a]
+class(formals(x)[[a]])=='(' && as.character(formals(x))[1]=='('
+class(formals(x)[[a]])=='('
+as.character(formals(x))[1]
+as.character(formals(x)[[a]])
+if(class(formals(x)[[a]])=='(' && as.character(formals(x)[[a]])[1]=='('){#
+			}else if(class(formals(x)[[a]])=='name' && as.character(formals(x)[[a]])[1]==''){#
+#
+			}else if(class(formals(x)[[a]])=='call' && as.character(formals(x)[[a]])[1]=='list'){#
+			}else{#
+				stop(paste0('There was an error processing argument ', a, ' for the ', names(funs)[i], ' function'))#
+			}
+arg2 <- as.character(formals(x)[[a]])[2]
+arg2
+a
+for(a in 1:length(formals(x))){#
+			if(class(formals(x)[[a]])=='(' && as.character(formals(x)[[a]])[1]=='('){#
+				arg2 <- as.character(formals(x)[[a]])[2]#
+#				if(grepl('||',))#
+#				vars <- gsub('|','',gsub('&',''))#
+			}else if(class(formals(x)[[a]])=='name' && as.character(formals(x)[[a]])[1]==''){#
+#
+			}else if(class(formals(x)[[a]])=='call' && as.character(formals(x)[[a]])[1]=='list'){#
+			}else{#
+				stop(paste0('There was an error processing argument ', a, ' for the ', names(funs)[i], ' function'))#
+			}#
+		}
+a
+a=
+1
+a
+arg2 <- as.character(formals(x)[[a]])[2]
+arg2
+vars <- gsub('|','',gsub('&','',gsub('(','',gsub(')','',arg2))))
+vars <- gsub('|',' ',gsub('&',' ',gsub('(',' ',gsub(')',' ',arg2,fixed=TRUE),fixed=TRUE),fixed=TRUE),fixed=TRUE)
+vars
+vars <- strsplit(vars,' ')[[1]]
+vars
+vars <- vars[vars!='']
+vars
+a=2
+class(formals(x)[[a]])=='name' && as.character(formals(x)[[a]])[1]==''
+formals(x)
+names(formals(x))[a]
+a=3
+class(formals(x)[[a]])=='call' && as.character(formals(x)[[a]])[1]=='list'
+formals(x)
+formals(x)[[a]]
+as.character(formals(x)[[a]])
+vars <- as.character(formals(x)[[a]])[-1]
+vars
+expand.grid(a=1:10,b=1:2)
+funs
+i=1
+allvars <- character(0)#
+	x <- funs[[i]]#
+	# Permitted classes are '(', 'name', 'call':#
+	if(!all(vapply(formals(x), class, character(1)) %in% c('(', 'name', 'call'))){#
+		stop(paste0('One or more arguments for the ', names(funs)[i], ' function are invalid: consult the help file for details of what is possible'))#
+	}#
+	if(!all(vapply(formals(x), function(y) return(as.character(y)[1]), character(1)) %in% c('(', '', 'list'))){#
+		stop(paste0('One or more arguments for the ', names(funs)[i], ' function are invalid: consult the help file for details of what is permitted'))#
+	}
+a=1
+arg2
+arg2 <- as.character(formals(x)[[a]])[2]
+arg2
+expr <- as.expression(as.character(formals(x)[[a]])[2])
+expr
+eval(expr)
+eval(parse(expr))
+eval(parse(text=expr))
+a=2
+names(formals(x))[a]
+a=3
+as.character(formals(x)[[a]])[-1]
+vars <- as.character(formals(x)[[a]])[-1]
+vars
+paste(vars, vars, collapse='=')
+paste(vars, '=', vars)
+paste(vars, '=', vars, collapse=', ')
+paste('data.frame(', paste(vars, '=', vars, collapse=', '), ')', sep='')
+?grepl
+?regexp
+grepl('^[[::alnum:]]', 'g')
+grepl('[[::alnum:]]', 'g')
+grepl('^[[:alnum:]]', 'g')
+grepl('^[[:alnum:]]', 'g.')
+grepl('[[:alnum:]]', 'g.')
+grepl('[[:punct:]]', 'g.')
+grepl('[[:punct:]]', 'g')
+grepl('[[:punct:],[:space:]]', 'g')
+grepl('[[:punct:],[:space:]]', 'g ')
+grepl('[[:punct:],[:space:]]', 'g.')
+?environment
+source("/Users/matthewdenwood/Documents/Research/Projects/Index/Scoring system/WelfareIndex/R/utilities.R")
+scores <- read.csv("/Users/matthewdenwood/Documents/Research/Projects/_Archived/Index/Final_2015/IndexData/Index_Weaners/results_measures.csv")
+scores
+scores <- read.csv("/Users/matthewdenwood/Documents/Research/Projects/_Archived/Index/Final_2015/IndexData/Index_Weaners/results_measures.csv")
+stopifnot(inherits(scores, 'data.frame'))
+stopifnot("TotalAnimals" %in% names(scores))
+stopifnot(ncol(scores) > 1)
+measure <- 'Panting'
+stopifnot(inherits(scores, 'data.frame'))#
+	stopifnot("TotalAnimals" %in% names(scores))#
+	stopifnot(ncol(scores) > 1)#
+	stopifnot(all(measure %in% names(scores)))#
+	stopifnot(! "TotalAnimals" %in% measure)

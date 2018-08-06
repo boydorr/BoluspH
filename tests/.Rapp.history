@@ -1,0 +1,26 @@
+library('DrainData')
+testfiles <- system.file("extdata", c("A.xlsx", "B.xlsx"), package="DrainData")
+testdir <- system.file("extdata", package="DrainData")
+stopifnot(length(testfiles)==2)#
+stopifnot(length(testdir)==1 && testdir!="")#
+#
+files <- c(testfiles, testdir, testdir, 'cock.txt', system.file("DESCRIPTION", package="DrainData"))#
+#
+# Test a basic run:#
+newdat1 <- DrainData:::read_files(files, merge_by_name=TRUE, quiet=FALSE, current_therapy=DrainData:::blank_therapy_df)
+testfiles
+library('DrainData')#
+#
+testfiles <- system.file("extdata", c("A.xlsx", "B.xlsx"), package="DrainData")#
+testdir <- system.file("extdata", package="DrainData")#
+#
+stopifnot(length(testfiles)==2)#
+stopifnot(length(testdir)==1 && testdir!="")#
+#
+files <- c(testfiles, testdir, testdir, 'cock.txt', system.file("DESCRIPTION", package="DrainData"))#
+#
+# Test a basic run:#
+newdat1 <- DrainData:::read_files(files, merge_by_name=TRUE, quiet=FALSE, current_therapy=DrainData:::blank_therapy_df)
+library('DrainData')
+library('DrainData')
+source("/Users/matthewdenwood/Documents/GitHub/DrainData/tests/test_read_files.R")
