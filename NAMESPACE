@@ -1,5 +1,6 @@
 import("tidyverse")  
-import("readxl")
+importFrom("readxl", "read_excel")
 importFrom("rlang", ".data")
+importFrom("mgcv", "gam", "predict.gam")
 
 export(BoluspH)

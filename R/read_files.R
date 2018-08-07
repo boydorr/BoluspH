@@ -1,42 +1,3 @@
-interpret_times <- function(times, proportions, warn=FALSE){
-	
-	stopifnot(is.character(times))
-	stopifnot(length(times)>0)
-	
-	rv <- vector('list', length=length(times))
-	stimes <- strsplit(times, split=',')
-	for(i in seq_along(times)){
-		nt <- stimes[[i]]
-		if(warn && length(nt) == 1 && nt[1]!=''){
-			cat('Note: ignoring single milking event\n')
-		}
-		if(length(nt)>1){
-			nt[!grepl(':',nt)] <- paste0(nt[!grepl(':',nt)], ':00')
-			## Just for checking:
-			for(j in seq_along(nt)){
-				ss <- try(ndt <- as.POSIXct(paste0('2000-01-01 ', nt[j]), tryFormats = c("%Y-%m-%d %H:%M:%OS", "%Y-%m-%d %H:%M"), tz='GMT'), silent=TRUE)
-				if(inherits(ss, 'try-error')){
-					stop('Unrecognised milking time format: ', nt[j])
-				}				
-			}
-			## Re-get the result as a vector:
-			ndt <- as.POSIXct(paste0('2000-01-01 ', nt), tryFormats = c("%Y-%m-%d %H:%M:%OS", "%Y-%m-%d %H:%M"), tz='GMT')
-			if(proportions){
-				hm <- cbind(as.numeric(strftime(ndt, format='%H', tz='GMT')), as.numeric(strftime(ndt, format='%M', tz='GMT')))
-				rv[[i]] <- c((hm[,1]+hm[,2]/60)/24)
-			}else{
-				rv[[i]] <- strftime(ndt, format='%H:%M', tz='GMT')
-			}
-		}else if(proportions){
-			rv[[i]] <- numeric(0)
-		}else{
-			rv[[i]] <- ''
-		}
-	}
-	
-	return(rv)
-}
-
 get_files <- function(folder_path, extension, targets){
 	
 	stopifnot(length(folder_path)==1)
@@ -45,13 +6,13 @@ get_files <- function(folder_path, extension, targets){
 	}
 	
 	## Find files:
-	files <- list.files(folder_path, pattern=paste0('\\.', extension, '$'))
+	files <- unlist(lapply(extension, function(x) return(list.files(folder_path, pattern=paste0('\\.', x, '$')))))
 	if(length(files)==0){
-		stop('No files with extension ".', extension, "' found in the specified folder path")
+		stop('No files with extension ".', paste(extension, collapse='/'), '" found in the specified folder path')
 	}
 
-	## If the target filename doesn't already end with this extension then try adding it:
-	newtargets <- ifelse(grepl(paste0('\\.', extension, '$'), targets), targets, paste0(targets[!grepl(paste0('\\.', extension, '$'), targets)], '.', extension))
+	## If the target filename doesn't already end with the first given extension then try adding it:
+	newtargets <- ifelse(grepl(paste0('\\.', extension[1], '$'), targets), targets, paste0(targets[!grepl(paste0('\\.', extension[1], '$'), targets)], '.', extension[1]))
 	
 	## Only match exactly:
 	file_in <- na.omit(match(files, newtargets))
@@ -61,12 +22,21 @@ get_files <- function(folder_path, extension, targets){
 
 read_csv_file <- function(path, skip, date_col, time_col, pH_col, sep, dec, date_format, time_format, ID){
 	
-	dat <- read.table(path, header=FALSE, sep=sep, dec=dec, skip=skip)
+	dat <- read.table(path, header=FALSE, sep=sep, dec=dec, skip=skip, stringsAsFactors=FALSE)
 	if(ncol(dat) < max(c(date_col, time_col, pH_col)))
 		stop('Unable to read CSV file ', path, ' as the number of columns (', ncol(dat), ') is less than max(c(date_col, time_col, pH_col))')
 	
 	dat <- data.frame(ID=ID, Date=dat[,date_col], Time=dat[,time_col], pH=dat[,pH_col], stringsAsFactors=FALSE)
-
+	
+	# Remove entries with missing date, time or pH:
+	dat <- dat %>%
+		filter(!is.na(.data$ID), !is.na(.data$Date), !is.na(.data$Time), !is.na(.data$pH)) %>%
+		filter(.data$ID!="", .data$Date!="", .data$Time!="", .data$pH!="")
+	
+	if(nrow(dat)<1){
+		stop('No valid data in file (zero rows after removing missing or blank date, time and pH)')
+	}
+	
 	tt <- dat$Date[1]
 	dat$Date <- as.Date(dat$Date, format=date_format, tz='GMT')
 	if(any(is.na(dat$Date))){
@@ -93,3 +63,23 @@ read_csv_file <- function(path, skip, date_col, time_col, pH_col, sep, dec, date
 	
 	return(dat)
 }
+
+read_excel_file <- function(path, skip, date_col, time_col, pH_col, ID){
+	
+	dat <- as.data.frame(read_excel(path, sheet=1, skip=skip, col_names=FALSE))
+	if(ncol(dat) < max(c(date_col, time_col, pH_col)))
+		stop('Unable to read Excel file ', path, ' as the number of columns (', ncol(dat), ') is less than max(c(date_col, time_col, pH_col))')
+	
+	dat <- data.frame(ID=ID, Date=as.Date(dat[,date_col]), Time=dat[,time_col], pH=dat[,pH_col], stringsAsFactors=FALSE)
+	
+	# Remove entries with missing date, time or pH:
+	dat <- dat %>%
+		filter(!is.na(.data$ID), !is.na(.data$Date), !is.na(.data$Time), !is.na(.data$pH))
+	
+	if(nrow(dat)<1){
+		stop('No valid data in file (zero rows after removing missing or blank date, time and pH)')
+	}
+	
+	return(dat)
+}
+

@@ -12,7 +12,8 @@ Depends:
 	tidyverse
 Imports:
 	readxl,
-	rlang
+	rlang,
+	mgcv
 Suggests:
     knitr
 VignetteBuilder: knitr
