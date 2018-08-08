@@ -30,7 +30,7 @@ Install the required packages from CRAN, as well as the BoluspH data from GitHub
 
 ```{r, eval=FALSE}
 install.packages(c('tidyverse','mgcv','devtools'))
-devtools::install_github('boydorr/BoluspH')
+devtools::install_github('boydorr/BoluspH', build_vignettes=TRUE)
 ```
 
 You should then be able to access this vignette from within R using:
