@@ -16,6 +16,9 @@
 #' vignette('BoluspH', package='BoluspH')
 #' }
 
+#' @references
+#' Denwood, M.J., J.L. Kleen, D.B. Jensen, and N.N. Jonsson. 2018. Describing temporal variation in reticuloruminal pH using continuous monitoring data. J. Dairy Sci. 101:233–245. doi:10.3168/jds.2017-12828
+
 #' @param meta_data an optional data frame including the columns ID (giving a unique identifier for the cow) and filename (giving the filename used for that cow)
 
 

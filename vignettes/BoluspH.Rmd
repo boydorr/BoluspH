@@ -17,8 +17,13 @@ set.seed(2018-08-06)
 
 ---
 
-TODO
+This package implements a simplified and automated version of the models discussed by Denwood et al (2018):
 
+Denwood, M.J., J.L. Kleen, D.B. Jensen, and N.N. Jonsson. 2018. Describing temporal variation in reticuloruminal pH using continuous monitoring data. J. Dairy Sci. 101:233–245. doi:10.3168/jds.2017-12828
+
+http://doi.org/10.3168/jds.2017-12828
+
+For more information, contact the corresponding author.
 
 ---
 
