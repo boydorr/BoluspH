@@ -48,3 +48,6 @@ The data storage class is written using an OOP-style of programming, so that the
 vignette('BoluspH', package='BoluspH')
 }
 }
+\references{
+Denwood, M.J., J.L. Kleen, D.B. Jensen, and N.N. Jonsson. 2018. Describing temporal variation in reticuloruminal pH using continuous monitoring data. J. Dairy Sci. 101:233–245. doi:10.3168/jds.2017-12828
+}
