@@ -1,6 +1,11 @@
-import("tidyverse")  
+import("tidyverse")
+import("dplyr")
+import("ggplot2")
 importFrom("readxl", "read_excel")
 importFrom("rlang", ".data")
 importFrom("mgcv", "gam", "predict.gam")
+importFrom("methods", "new")
+importFrom("stats", "na.omit")
+importFrom("utils", "read.table")
 
 export(BoluspH)

@@ -11,8 +11,13 @@ Depends:
     R (>= 2.14.0),
 	tidyverse
 Imports:
+	stats,
+	utils,
+	methods,
 	readxl,
 	rlang,
+	ggplot2,
+	dplyr,
 	mgcv
 Suggests:
     knitr
@@ -22,3 +27,4 @@ Description: Imports data from Excel files produced by ruminal pH bolus monitors
 	vignette: vignette('BoluspH', package='BoluspH') and/or the help file for the
     BoluspH class (see ?BoluspH ).
 License: GPL (>= 3)
+RoxygenNote: 6.0.1

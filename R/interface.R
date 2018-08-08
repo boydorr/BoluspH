@@ -20,7 +20,7 @@
 
 
 BoluspH <- setRefClass('BoluspH',
-	fields = list(Meta='data.frame', Data='data.frame', Overview='data.frame', Daily='data.frame', Hourly='data.frame',id_imported='character'), 
+	fields = list(Meta='data.frame', Data='data.frame', Overview='data.frame', Daily='data.frame', Hourly='data.frame', id_imported='character', run='logical'), 
 
 	methods = list(
 
@@ -56,8 +56,10 @@ BoluspH <- setRefClass('BoluspH',
 		meta_data$Milking <- interpret_times(meta_data$Milking, proportions=FALSE, warn=TRUE)
 		
 		.self$Meta <- meta_data %>% select(.data$ID, .data$Filename, .data$Milking, .data$Start, .data$End, everything())
-
 		.self$Data <- data.frame(ID=factor(levels=.self$Meta$ID), Date=as.Date(character(0)), Time=as.POSIXct(character(0), tz='GMT'), pH=numeric(0))
+		.self$run <- FALSE
+		
+		cat("Successfully set up a model container for", nrow(meta_data), "individuals\n")
 		
 	},
 	
@@ -195,7 +197,7 @@ BoluspH <- setRefClass('BoluspH',
 		cat('Start and End dates updated for individual', ID, '\n')
 	},
 	
-	ExtractData = function(ID = 'all'){
+	ExtractData = function(ID = 'all', date_limited=TRUE){
 		"Extract the saved time series data for one more individual, including model predictions if the analysis has been run"
 		
 		stopifnot(is.character(ID))
@@ -206,11 +208,19 @@ BoluspH <- setRefClass('BoluspH',
 			stop('Data for one or more specified ID has not yet been imported')
 		}
 		
-		return(.self$Data %>% filter(.data$ID %in% ID))
+		toret <- .self$Data %>% filter(.data$ID %in% ID)
+		
+		if(date_limited){
+			toret <- merge(toret, .self$Meta %>% select(.data$ID, .data$Start, .data$End), by='ID') %>%
+				filter(Date >= Start, Date <= End) %>%
+				select(-.data$Start, -.data$End)
+		}
+		
+		return(toret)
 		
 	},
 	
-	RunModels = function(gam=TRUE, milking='adjusted', exclude_pre=1, exclude_post=1){
+	RunModels = function(gam=TRUE, milking='adjusted', exclude_pre=1, exclude_post=1, min_days=10){
 		"Run the model using specified options and record the predictions and summary statistics for later use"
 		
 		if(any(!.self$Meta$ID %in% .self$id_imported)){
@@ -218,7 +228,8 @@ BoluspH <- setRefClass('BoluspH',
 		}
 		
 		stopifnot(is.logical(gam) && length(gam)==1)
-		stopifnot(is.character(milking) && length(milking)==1)
+		if(!is.character(milking) || length(milking)!=1)
+			stop('The milking option must correspond to one of the three following values:  none, fixed, adjusted')
 		
 		ald <- c('none','fixed','adjusted')
 		milking <- pmatch(milking, ald)
@@ -228,43 +239,45 @@ BoluspH <- setRefClass('BoluspH',
 		milking <- ald[milking]
 		
 		# Add new columns to the data:
-		meandate <- mean(as.numeric(.self$Data$Date))
-		.self$Data <- .self$Data %>% 
-			mutate(Day=as.numeric(.data$Date)-meandate, daily=as.numeric(NA), 
+		tsdata <- .self$Data %>% 
+			mutate(Day=as.numeric(NA), daily=as.numeric(NA), 
 				milking=as.numeric(NA), prediction=as.numeric(NA), residual=as.numeric(NA))
 		
 		# Get daily frequency for all individuals:
-		.self$Data$daily <- 2*pi*toprop(.self$Data$Time)
-		stopifnot(all(!is.na(.self$Data$daily)) && all(.self$Data$daily >=0) && all(.self$Data$daily <=2*pi))
-			
+		tsdata$daily <- 2*pi*toprop(tsdata$Time)
+		stopifnot(all(!is.na(tsdata$daily)) && all(tsdata$daily >=0) && all(tsdata$daily <=2*pi))
+	
 		# Set up lists to save between-day (i.e. once per day) and within-day (i.e. one day) for each individual
 		between_day <- vector('list', length=length(.self$Meta$ID))
 		names(between_day) <- .self$Meta$ID
 		within_day <- vector('list', length=length(.self$Meta$ID))
 		names(within_day) <- .self$Meta$ID
-		
+		overall <- vector('list', length=length(.self$Meta$ID))
+		names(overall) <- .self$Meta$ID
+
 		cat('Running analyses for', length(.self$Meta$ID), 'individuals...\n')
 		pb <- txtProgressBar(style=3)
 		for(i in seq_along(.self$Meta$ID)){
-			
+	
 			## Extract relevant data:
 			tmeta <- .self$Meta[i,]
 			tID <- tmeta$ID
-			din <- which(.self$Data$ID == tID)
-			
+			din <- which(tsdata$ID == tID)
+	
 			# Get milking times/frequencies for this individual:
 			breakprops <- interpret_times(tmeta$Milking, proportions=TRUE, warn=FALSE)[[1]]
 			if(length(breakprops)==0){
-				.self$Data$milking[din] <- 0
+				tsdata$milking[din] <- 0
+				freq <- 0
 			}else{
-				
-				prop <- toprop(.self$Data$Time[din])
+		
+				prop <- toprop(tsdata$Time[din])
 				freq <- length(breakprops)
 				stopifnot(freq >= 2)
-				
+		
 				if(milking=='fixed'){
 					## Non-adjusted milking frequency:
-					.self$Data$milking_fixed[din] <- 2*pi*(prop*freq - floor(prop*freq))
+					tsdata$milking_fixed[din] <- 2*pi*(prop*freq - floor(prop*freq))
 				}else if(milking=='adjusted'){
 					## Adjusted milking frequency:
 					# Need to add the first breakpoints outside the range as well so the proportion can be determined:
@@ -273,62 +286,91 @@ BoluspH <- setRefClass('BoluspH',
 					# Now re-scale the proportions relative to the progress within these breakpoints:
 					for(cp in 1:(freq+1)){
 						using <- prop > breakprops[cp] & prop <= breakprops[cp+1]
-						.self$Data$milking[din][using] <- 2*pi*((prop[using]-breakprops[cp])/(breakprops[cp+1]-breakprops[cp]))
+						tsdata$milking[din][using] <- 2*pi*((prop[using]-breakprops[cp])/(breakprops[cp+1]-breakprops[cp]))
 					}
 				}else{
 					stop('Error in matching milking type')
 				}
 			}
-			stopifnot(all(!is.na(.self$Data$milking[din])) && all(.self$Data$milking[din] >=0) 
-				&& all(.self$Data$milking[din] <=2*pi))
-			
+			stopifnot(all(!is.na(tsdata$milking[din])) && all(tsdata$milking[din] >=0) 
+				&& all(tsdata$milking[din] <=2*pi))
+	
 			# Check proportion calculations visually:
 			if(FALSE){
-				plotdata <- .self$Data[din,] %>% filter(.data$Date > min(.data$Date), .data$Date < (min(.data$Date)+5))
+				plotdata <- tsdata[din,] %>% filter(.data$Date > min(.data$Date), .data$Date < (min(.data$Date)+5))
 				plot(plotdata$Time, plotdata$daily, type='l')
 				lines(plotdata$Time, plotdata$milking, col='blue')
 			}
-			
-			
+	
+			# Adjust day by the mean:
+			meandate <- mean(as.numeric(tsdata$Date[din]))
+			tsdata$Day[din] <- as.numeric(tsdata$Date[din]) - meandate
+	
 			## Fit the overall model for this animal:
-			mdat <- .self$Data %>% filter(.data$ID==tID, .data$Date >= tmeta$Start, .data$Date <= tmeta$End)
+			gamdat <- tsdata %>% filter(.data$ID==tID, .data$Date >= tmeta$Start, .data$Date <= tmeta$End)
+	
+			# Check there are enough days:
+			if(length(unique(gamdat$Date)) < min_days){
+				warning(paste0('Models for individual ', tID, ' were skipped as there are fewer than ', min_days, ' days of data available'))
+				next
+			}
+	
 			if(gam){
-				if(milking=='none'){
-					model <- gam(pH ~ sin(daily) + cos(daily) + s(Day), data=mdat)
+				if(milking=='none' || freq==0){
+					model <- gam(pH ~ sin(daily) + cos(daily) + s(Day), data=gamdat)
 				}else{
-					model <- gam(pH ~ sin(daily) + cos(daily) + sin(milking) + cos(milking) + s(Day), data=mdat)
+					model <- gam(pH ~ sin(daily) + cos(daily) + sin(milking) + cos(milking) + s(Day), data=gamdat)
 				}
 				# Get the GAM prediction:
-				bdpred <- data.frame(ID=tID, Date=min(.self$Data$Date[din]) + 0:difftime(max(.self$Data$Date[din]),min(.self$Data$Date[din]),units='days')) %>%
+				bdpred <- data.frame(ID=tID, Date=min(tsdata$Date[din]) + 0:difftime(max(tsdata$Date[din]),min(tsdata$Date[din]),units='days')) %>%
 					mutate(Day=as.numeric(.data$Date)-meandate, daily=0, milking=0)
 				bdpred$GAMpred <- predict(model, newdata=bdpred)
 				bdpred <- bdpred %>% select(.data$ID, .data$Date, .data$GAMpred)
 			}else{
-				if(milking=='none'){
-					model <- lm(pH ~ sin(daily) + cos(daily), data=mdat)
+				if(milking=='none' || freq==0){
+					model <- lm(pH ~ sin(daily) + cos(daily), data=gamdat)
 				}else{
-					model <- lm(pH ~ sin(daily) + cos(daily) + sin(milking) + cos(milking), data=mdat)
+					model <- lm(pH ~ sin(daily) + cos(daily) + sin(milking) + cos(milking), data=gamdat)
 				}
 				# Equivalent to GAM prediction:
-				bdpred <- data.frame(ID=tID, Date=min(.self$Data$Date[din]) + 0:difftime(max(.self$Data$Date[din]),min(.self$Data$Date[din]),units='days'), GAMpred=as.numeric(coef(model)['(Intercept)']))
+				bdpred <- data.frame(ID=tID, Date=min(tsdata$Date[din]) + 0:difftime(max(tsdata$Date[din]),min(tsdata$Date[din]),units='days'), GAMpred=as.numeric(coef(model)['(Intercept)']))
 			}
-			
+	
+			# Save the GAM prediction for use as an offset when refitting by day:
+			gamdat$GAMoffset <- predict(model, newdata=gamdat %>% mutate(daily=0, milking=0))
+	
 			# TODO:  add summary stats from main data and merge
 			between_day[[tID]] <- bdpred %>% select(.data$ID, .data$Date, .data$GAMpred)
-			
+	
 			# TODO:  add more summary stats e.g. range etc for particular time of day
 			# Predict at 15 minute intervals (allow user to change default??):
 			wdpred <- data.frame(ID=tID, prop=seq(0,2*pi,length.out=97)[-97])
 			# TODO:  add milking etc and make predictions (for the closest day to the average GAM)
 			within_day[[tID]] <- wdpred
-			
-			
-			## Re-fit the model with omitted data for day +/- X days:
+	
+			## Add summary stats from the model (merge later then derive e.g. amplitude etc):
+			coefs <- c(coef(model), "edf"=NA)
+			if(milking=='none' || freq==0){
+				coefs <- c(coefs, "sin(milking)"=NA, "cos(milking)"=NA)
+			}
+			if(gam){
+				coefs['edf'] <- summary(model)$s.table[1,'edf']
+			}
+			overall[[tID]] <- data.frame(ID=tID, MilkingFrequency=freq, intercept=coefs['(Intercept)'], edf_gam=coefs['edf'], sin_day=coefs['sin(daily)'], cos_day=coefs['cos(daily)'], sin_milking=coefs['sin(milking)'], cos_milking=coefs['cos(milking)'])
+	
+			## Re-fit the model with omitted data for day +/- X days (but using single GAM estimate):
+	
+			# Check there are enough days:
+			if((length(unique(gamdat$Date))-(1+exclude_pre+exclude_post)) < min_days){
+				warning(paste0('Predictive models for individual ', tID, ' were skipped as there are fewer than ', min_days, ' of data available after excluding ', (1+exclude_pre+exclude_post), ' consecutive days'))
+				next
+			}
+	
 			alldates <- tmeta$Start + (0:difftime(tmeta$End, tmeta$Start, units='days'))			
 			for(di in seq_along(alldates)){
-				
+		
 				date <- alldates[di]
-				
+		
 				excldates <- date
 				if(exclude_pre > 0){
 					excldates <- c(excldates, date-(1:exclude_pre))
@@ -336,40 +378,60 @@ BoluspH <- setRefClass('BoluspH',
 				if(exclude_post > 0){
 					excldates <- c(excldates, date+(1:exclude_post))
 				}
-				
-				mdat <- .self$Data %>% filter(.data$ID==tID, .data$Date >= tmeta$Start, .data$Date <= tmeta$End, !.data$Date %in% excldates)
-				if(gam){
-					if(milking=='none'){
-						model <- gam(pH ~ sin(daily) + cos(daily) + s(Day), data=mdat)
-					}else{
-						model <- gam(pH ~ sin(daily) + cos(daily) + sin(milking) + cos(milking) + s(Day), data=mdat)
-					}
+		
+				mdat <- gamdat %>% filter(.data$ID==tID, .data$Date >= tmeta$Start, .data$Date <= tmeta$End, !.data$Date %in% excldates)
+				if(milking=='none' || freq==0){
+					model <- lm(pH ~ sin(daily) + cos(daily) + offset(GAMoffset), data=mdat)
 				}else{
-					if(milking=='none'){
-						model <- lm(pH ~ sin(daily) + cos(daily), data=mdat)
-					}else{
-						model <- lm(pH ~ sin(daily) + cos(daily) + sin(milking) + cos(milking), data=mdat)
-					}
+					model <- lm(pH ~ sin(daily) + cos(daily) + sin(milking) + cos(milking) + offset(GAMoffset), data=mdat)
 				}
-				fakedata <- .self$Data %>% filter(.data$ID==tID, .data$Date == date)
+				fakedata <- gamdat %>% filter(.data$ID==tID, .data$Date == date)
+				fakedata$pH <- NULL
 				dpred <- predict(model, newdata=fakedata)
-				.self$Data$prediction[.self$Data$ID==tID & .self$Data$Date==date] <- dpred
+				tsdata$prediction[tsdata$ID==tID & tsdata$Date==date] <- dpred
 			}
-			
+	
 			setTxtProgressBar(pb, i/length(.self$Meta$ID))
 		}
 		close(pb)
+		
+		.self$Data$prediction <- tsdata$prediction
+		.self$Data$residual <- .self$Data$pH - .self$Data$prediction
+		
+		# TODO: automatically calculate mean absolute residual etc for the daily info
 		
 		.self$Daily <- do.call('rbind', between_day)
 		rownames(.self$Daily) <- NULL
 		.self$Hourly <- do.call('rbind', within_day)
 		rownames(.self$Hourly) <- NULL
+		
+		overall <- do.call('rbind', overall)
+		rownames(overall) <- NULL
+		.self$Overview <- merge(.self$Meta %>% select(.data$ID, .data$Start, .data$End, everything(), MilkingTimes=.data$Milking), overall, by='ID')
+		
+		.self$run <- TRUE
+	},
+	
+	GetOverview = function(ID = 'all'){
+		"Extract an overview of the data per animal (assuming that the analysis has been run)"
+		
+		if(!.self$run){
+			stop("You need to run the models before extracting the overview information")
+		}
+		
+		stopifnot(is.character(ID))
+		if('all' %in% ID){
+			ID <- .self$id_imported
+		}
+		if(any(!ID %in% .self$id_imported)){
+			stop('One or more specified ID not found')
+		}
+	
+		return(.self$Overview %>% filter(.data$ID %in% ID))
+	
 	}
 	
-	
 #   TODO: Plot method for looking at graphical summaries of one/more animals, and saving to file?
-
-#   TODO: Analyse method generates prediction within window, and daily data and overview (sine curve stats) - gam or not
 
 #   TODO: Retrieve methods to get data frames and save CSV files	
 	

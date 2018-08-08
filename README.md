@@ -1,8 +1,10 @@
 # BoluspH
 
-To install the software:
+To get started run this code in R:
 
-install.packages(c('devtools','tidyverse','readxl','rlang'))
+install.packages(c('tidyverse','mgcv','devtools'))
+
 devtools::install_github('boydorr/BoluspH')
-library('BoluspH')
+
+vignette('BoluspH', package='BoluspH')
 
