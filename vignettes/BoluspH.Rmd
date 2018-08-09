@@ -34,7 +34,7 @@ For more information, contact the corresponding author.
 Install the required packages from CRAN, as well as the BoluspH data from GitHub (this only needs to be done once, unless the package is updated):
 
 ```{r, eval=FALSE}
-install.packages(c('tidyverse','mgcv','devtools'))
+install.packages(c('tidyverse','mgcv','devtools','knitr'))
 devtools::install_github('boydorr/BoluspH', build_vignettes=TRUE)
 ```
 
